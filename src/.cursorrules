@@ -1,0 +1,132 @@
+# ShroomBox ESP32 Project Intelligence
+
+## Project Overview
+ShroomBox is an ESP32-based IoT device using Blynk.Edgent framework for remote control and monitoring. The project integrates a CO2 sensor (SCD30) and provides LED control via Blynk platform.
+
+## Critical Implementation Paths
+
+### Blynk Virtual Pin Pattern
+- Virtual pins are defined using `BLYNK_WRITE(VX)` handlers
+- Current implementation: V0 controls LED (GPIO 2), V3 receives CO2 concentration
+- Sensor data sent using `Blynk.virtualWrite(VX, value)` in readCO2() function
+- Always check `Blynk.connected()` before sending data
+- Use non-blocking timer pattern for periodic sensor reads
+
+### CO2 Sensor Integration Pattern
+- Sensor initialized in `setup()` via `initCO2()`
+- Sensor read in `loop()` via `readCO2()` every 5 seconds using non-blocking timer (millis())
+- CO2 concentration sent to Blynk virtual pin V3 via `Blynk.virtualWrite(V3, co2Concentration)`
+- Data also printed to Serial for debugging
+- Temperature and humidity are read but not yet sent to Blynk (available for future expansion)
+
+### State Machine Pattern
+- Never call blocking operations in main loop
+- Always check `BlynkState::is()` before state-dependent operations
+- Use `BlynkEdgent.run()` in loop, not direct Blynk.run()
+- State transitions are handled by framework
+
+### I2C Communication Pattern
+- Wire library initialized in `initCO2()` with `Wire.begin()`
+- SCD30 uses I2C address `SCD30_I2C_ADDR_61`
+- GPIO 21 (SDA) and GPIO 22 (SCL) are standard ESP32 I2C pins
+- Sensor requires 2-second delay after soft reset
+- Measurement interval: minimum 2 seconds between reads
+
+## Code Structure Patterns
+
+### File Organization
+- Main sketch: `ESP32_Blynk.ino`
+- Sensor functions: `func_co2_sensor.ino`
+- Framework headers: Modular `.h` files (BlynkEdgent, ConfigStore, etc.)
+- User code: BLYNK_WRITE handlers and sensor integration in main sketch
+
+### Error Handling Pattern
+- CO2 sensor uses error codes (NO_ERROR = 0)
+- Check `error != NO_ERROR` after sensor operations
+- Use `errorToString()` for readable error messages
+- Print errors to Serial for debugging
+
+### Timing Considerations
+- Main loop delay: 10ms (for BlynkEdgent.run()) - keeps Blynk responsive
+- CO2 sensor read interval: 5 seconds using non-blocking timer (millis() pattern)
+- Sensor blocking read: 1.5 second delay inside readCO2() (only runs every 5s, doesn't block main loop)
+- Non-blocking pattern: Use `unsigned long lastCO2Read` and `millis()` to avoid blocking delays
+- Total sensor cycle: ~6.5 seconds per measurement, but main loop stays responsive
+
+## User Preferences
+
+### Development Workflow
+- User prefers step-by-step process with testing after each step
+- User prefers confirmation before code changes
+- User prefers manual command execution (not auto-execution)
+- Commands should be provided for user to run, not executed directly
+
+### Code Changes
+- Always ask for confirmation before making code changes
+- Provide clear explanation of what will change
+- Test functionality after each significant change
+- Document changes in memory bank when appropriate
+
+## Project-Specific Patterns
+
+### Blynk Template Configuration
+- Template ID: `TMPL4JzPZ45yp`
+- Template Name: `ShroomBox`
+- Firmware Version: `0.1.0`
+- Board: ESP32 Dev Module (`USE_ESP32_DEV_MODULE`)
+
+### GPIO Pin Assignments
+- LED: GPIO 2
+- Button: GPIO 0 (board default)
+- I2C SDA: GPIO 21
+- I2C SCL: GPIO 22
+
+### Sensor Configuration
+- Sensor: Sensirion SCD30
+- Interface: I2C
+- Address: SCD30_I2C_ADDR_61
+- Measurements: CO2 (ppm), Temperature (°C), Humidity (%)
+- Read interval: 5 seconds (minimum 2s sensor requirement)
+- Blynk Integration: CO2 sent to V3, temperature/humidity available for future pins
+
+## Known Challenges
+
+### CO2 Sensor Integration
+- ✅ CO2 data now sent to Blynk virtual pin V3
+- ⏳ Temperature and humidity available but not yet sent to Blynk
+- Consider adding V1 (temperature) and V2 (humidity) for complete sensor data
+
+### Timing Conflicts
+- ✅ Resolved: Non-blocking timer pattern implemented
+- ✅ LED now responds immediately to Blynk commands
+- Sensor blocking read (1.5s) only occurs every 5 seconds, doesn't affect responsiveness
+
+### Memory Considerations
+- ESP32 has limited RAM for WiFi and Blynk operations
+- Monitor heap usage if adding more features
+- Sensor library adds some memory overhead
+
+## Best Practices for This Project
+
+1. **Always check Blynk connection** before sending data
+2. **Use non-blocking patterns** where possible
+3. **Test sensor readings** via Serial before Blynk integration
+4. **Follow Blynk.Edgent patterns** for state management
+5. **Document GPIO usage** to avoid conflicts
+6. **Test incrementally** - verify each feature before adding next
+
+## Future Expansion Patterns
+
+### Adding New Virtual Pins
+1. Define pin in Blynk template
+2. Add `BLYNK_WRITE(VX)` handler for control
+3. Use `Blynk.virtualWrite(VX, value)` for data sending
+4. Update memory bank documentation
+
+### Adding New Sensors
+1. Initialize in `setup()`
+2. Read in `loop()` with appropriate timing
+3. Send to Blynk using virtual pins
+4. Handle errors gracefully
+5. Document in memory bank
+
