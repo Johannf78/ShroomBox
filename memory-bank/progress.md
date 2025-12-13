@@ -5,10 +5,12 @@
 ### Core Functionality
 - ✅ **WiFi Provisioning**: Device can enter AP mode and accept WiFi credentials
 - ✅ **Blynk Cloud Connection**: Device connects to Blynk cloud successfully
-- ✅ **LED Control**: LED can be controlled remotely via Blynk virtual pin V0
+- ✅ **Fan Control**: Fan (GPIO 25) can be controlled remotely via Blynk virtual pin V0
+- ✅ **Humidifier Control**: Humidifier (GPIO 26) can be controlled remotely via Blynk virtual pin V4
+- ✅ **Auto Mode**: Automatic environmental control can be toggled via Blynk virtual pin V5
 - ✅ **State Machine**: All state transitions work correctly
-- ✅ **LED Indication**: LED shows device state (configuring, connecting, running, error)
-- ✅ **Configuration Reset**: Button can reset device configuration (10-second hold)
+- ✅ **LED Indication**: LED (GPIO 14) shows device state (configuring, connecting, running, error)
+- ✅ **Configuration Reset**: Button (GPIO 0) can reset device configuration (10-second hold)
 - ✅ **Configuration Persistence**: Settings saved to flash and loaded on boot
 - ✅ **Web Portal**: Basic web interface for WiFi and Blynk configuration
 - ✅ **Serial Debugging**: Comprehensive serial output for debugging
@@ -20,12 +22,17 @@
 - ✅ **Credentials Reset**: Physical button reset working
 
 ### Hardware Integration
-- ✅ **LED Control**: GPIO 2 configured for LED output
+- ✅ **LED Control**: GPIO 14 configured for LED state indication
+- ✅ **Fan Control**: GPIO 25 configured for fan output control
+- ✅ **Humidifier Control**: GPIO 26 configured for humidifier output control
+- ✅ **Heater Pin**: GPIO 12 defined (not yet implemented)
 - ✅ **Button Input**: GPIO 0 configured for reset button
 - ✅ **CO2 Sensor (SCD30)**: I2C communication initialized (GPIO 21/22)
 - ✅ **CO2 Sensor Reading**: Reads CO2 concentration, temperature, and humidity
-- ✅ **CO2 Sensor Blynk Integration**: CO2 concentration sent to Blynk virtual pin V3
-- ✅ **Non-Blocking Loop**: Timer-based CO2 reading (5-second interval) - LED responds immediately
+- ✅ **CO2 Sensor ASC**: Automatic Self-Calibration disabled for mushroom chamber use
+- ✅ **Sensor Blynk Integration**: Temperature (V1), Humidity (V2), CO2 (V3) sent to Blynk
+- ✅ **Automatic Control**: Fan and humidifier automatically controlled based on sensor thresholds
+- ✅ **Non-Blocking Loop**: Timer-based CO2 reading (60-second interval) - responds immediately
 - ✅ **WiFi**: Station and Access Point modes working
 - ✅ **Serial**: Debug output at 115200 baud
 
@@ -38,11 +45,12 @@
 - ⏳ **Button Timing**: Verify button hold times work reliably
 
 ### Potential Enhancements
-- ⏳ **Temperature & Humidity Blynk Integration**: Send temperature (V1) and humidity (V2) to Blynk
-- ⏳ **Additional Virtual Pins**: Expand beyond V0 and V3 for more functionality
+- ⏳ **Heater Control**: Implement heater control via GPIO 12 for temperature management
+- ⏳ **Configurable Thresholds**: Make CO2 and humidity thresholds user-configurable via Blynk
 - ⏳ **Data Logging**: Enhanced data logging and historical tracking
+- ⏳ **Alerts/Notifications**: Blynk notifications when thresholds are exceeded
 - ⏳ **Web Portal Enhancement**: Improve UI with filesystem assets
-- ⏳ **Multi-Device Support**: Support multiple device types from same codebase
+- ⏳ **Multi-Chamber Support**: Support multiple fruiting chambers from same device
 
 ### Documentation
 - ✅ **Memory Bank**: Complete project documentation created
@@ -53,7 +61,7 @@
 ## Current Status
 
 ### Version
-- **Firmware Version**: 0.1.0
+- **Firmware Version**: 0.1.2
 - **Build Date**: Not tracked (would be set at compile time)
 - **Template ID**: TMPL4JzPZ45yp
 - **Template Name**: ShroomBox
@@ -64,8 +72,9 @@
 The project has all core features implemented, tested, and confirmed working:
 - Device provisioning ✅
 - Cloud connectivity ✅
-- Remote control (LED via V0) ✅
-- CO2 monitoring (V3) ✅ - **Tested and verified working**
+- Remote control (Fan via V0, Humidifier via V4, Auto mode via V5) ✅
+- Environmental monitoring (Temperature V1, Humidity V2, CO2 V3) ✅ - **Tested and verified working**
+- Automatic environmental control ✅ - **Fan and humidifier auto-control working**
 - State indication ✅
 - Configuration management ✅
 
@@ -94,12 +103,16 @@ No critical issues have been identified. The project appears to be in a stable, 
 - ✅ Initial configuration flow
 - ✅ WiFi connection
 - ✅ Blynk cloud connection
-- ✅ LED control via Blynk (immediate response with non-blocking loop)
+- ✅ Fan control via Blynk virtual pin V0 (manual and automatic)
+- ✅ Humidifier control via Blynk virtual pin V4 (manual and automatic)
+- ✅ Auto mode toggle via Blynk virtual pin V5
 - ✅ Configuration reset via button
 - ✅ State transitions
 - ✅ LED indication patterns
 - ✅ CO2 sensor initialization and reading (Serial output verified)
-- ✅ CO2 data transmission to Blynk virtual pin V3
+- ✅ CO2 sensor ASC disabled for mushroom chamber
+- ✅ Environmental data transmission to Blynk (Temperature V1, Humidity V2, CO2 V3)
+- ✅ Automatic control logic (fan based on CO2, humidifier based on humidity)
 
 ### Not Yet Tested ⏳
 - ⏳ OTA firmware updates
@@ -131,8 +144,11 @@ No critical issues have been identified. The project appears to be in a stable, 
 ### Functional Requirements
 - ✅ Device can be provisioned without physical access
 - ✅ Device maintains connection to Blynk cloud
-- ✅ LED can be controlled remotely (V0) - **Tested and working**
-- ✅ CO2 sensor data transmitted to Blynk (V3) - **Tested and verified (413.45 ppm observed)**
+- ✅ Fan can be controlled remotely (V0) - **Tested and working**
+- ✅ Humidifier can be controlled remotely (V4) - **Tested and working**
+- ✅ Auto mode can be toggled (V5) - **Tested and working**
+- ✅ Environmental sensor data transmitted to Blynk (V1, V2, V3) - **Tested and verified**
+- ✅ Automatic control maintains optimal conditions - **Tested and working**
 - ✅ Device state is clearly indicated
 - ✅ Configuration can be reset
 
@@ -144,8 +160,10 @@ No critical issues have been identified. The project appears to be in a stable, 
 - ⏳ Production readiness (needs validation)
 
 ## Notes
-- Project is in early development stage (v0.1.0)
+- Project is in early development stage (v0.1.2)
 - Core functionality is complete and working
-- Good foundation for future expansion
+- Mushroom chamber environmental control system operational
+- Automatic control logic working for fan and humidifier
+- Good foundation for future expansion (heater control, configurable thresholds)
 - Framework provides solid base for IoT development
 

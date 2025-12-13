@@ -25,7 +25,7 @@
 │  │  Machine  │  │
 │  └───────────┘  │
 │  ┌───────────┐  │
-│  │  Hardware │  │◄─── LED, Button, CO2 Sensor
+│  │  Hardware │  │◄─── LED, Button, Fan, Humidifier, CO2 Sensor
 │  │  Control  │  │
 │  └───────────┘  │
 └─────────────────┘
@@ -126,9 +126,10 @@ Edgent_ESP32.ino
    - Blynk app → Blynk cloud → Blynk library → BLYNK_WRITE handler → Hardware
    
 3. **Sensor Flow** (Current):
-   - CO2 Sensor (I2C) → readCO2() → Serial output + Blynk virtual pin V3 → Blynk cloud
-   - Timer-based non-blocking reading (every 5 seconds)
-   - Temperature and humidity also read but not yet sent to Blynk
+   - CO2 Sensor (I2C) → readCO2() → Serial output + Blynk virtual pins V1, V2, V3 → Blynk cloud
+   - Timer-based non-blocking reading (every 60 seconds)
+   - Temperature (V1), Humidity (V2), and CO2 (V3) all sent to Blynk
+   - Automatic control logic uses sensor data to control fan and humidifier
    
 4. **State Flow**:
    - Events → State machine → State handlers → LED indicator → Visual feedback
@@ -187,7 +188,9 @@ Edgent_ESP32.ino
 - Runs `BlynkEdgent.run()` loop continuously (every 10ms)
 - Handles state machine transitions
 - Processes Blynk events immediately (non-blocking)
-- Timer-based CO2 sensor reading (every 5 seconds) using millis()
+- Timer-based CO2 sensor reading (every 60 seconds) using millis()
+- Automatic control logic checks sensor values and updates fan/humidifier states
+- Updates Blynk virtual pins only when values change (optimization)
 
 ### Indicator Thread (pthread)
 - Separate thread for LED animations

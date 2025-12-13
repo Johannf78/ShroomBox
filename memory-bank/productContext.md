@@ -1,7 +1,7 @@
 # Product Context: ShroomBox
 
 ## Why This Project Exists
-ShroomBox is an IoT device that enables remote control and monitoring of hardware through the Blynk platform. The project aims to provide a foundation for building connected devices with minimal configuration overhead.
+ShroomBox is an IoT device designed for environmental monitoring and control of a mushroom fruiting chamber. It enables remote control and monitoring of environmental conditions (CO2, temperature, humidity) and automated control of fans and humidifiers through the Blynk platform, ensuring optimal growing conditions for mushrooms.
 
 ## Problems It Solves
 
@@ -34,10 +34,15 @@ ShroomBox is an IoT device that enables remote control and monitoring of hardwar
 
 ### Normal Operation Flow
 1. Device maintains connection to WiFi and Blynk cloud
-2. User can control LED via Blynk virtual pin V0 (immediate response)
-3. Device reads CO2 sensor every 5 seconds and sends data to Blynk virtual pin V3
-4. Device responds to commands from Blynk app immediately (non-blocking loop)
-5. LED indicates device state (breathing animation when running)
+2. Device reads CO2 sensor every 60 seconds and sends data to Blynk (V1=temp, V2=humidity, V3=CO2)
+3. User can control fan manually via Blynk virtual pin V0
+4. User can control humidifier manually via Blynk virtual pin V4
+5. User can enable/disable auto mode via Blynk virtual pin V5
+6. In auto mode:
+   - Fan turns on when CO2 > 1250 ppm, off when CO2 < 1100 ppm
+   - Humidifier turns on when humidity < 70% (only when fan is off), off when humidity > 85%
+7. Device responds to commands from Blynk app immediately (non-blocking loop)
+8. LED indicates device state (breathing animation when running)
 
 ### Configuration Reset Flow
 1. User holds physical button for 10 seconds
@@ -65,19 +70,23 @@ ShroomBox is an IoT device that enables remote control and monitoring of hardwar
 - **Documented**: Clear understanding of device behavior and state transitions
 
 ## Target Use Cases
-1. **Home Automation**: Control lights, fans, or other devices remotely
-2. **Monitoring**: Monitor sensors and receive alerts
-3. **Prototyping**: Quick prototype of IoT concepts
-4. **Education**: Learn IoT development with ESP32 and Blynk
+1. **Mushroom Growing**: Automated environmental control for mushroom fruiting chambers
+2. **Indoor Agriculture**: Monitor and control CO2, temperature, and humidity for optimal growing conditions
+3. **Home Automation**: Control fans and humidifiers remotely
+4. **Environmental Monitoring**: Real-time monitoring of air quality and environmental conditions
 
 ## Current Implementation Status
-- Basic LED control via Blynk virtual pin V0 (immediate response)
+- Fan control (GPIO 25) via Blynk virtual pin V0 - manual and automatic modes
+- Humidifier control (GPIO 26) via Blynk virtual pin V4 - manual and automatic modes
+- Auto mode toggle via Blynk virtual pin V5
 - CO2 sensor (SCD30) integrated - reads CO2, temperature, humidity
-- CO2 concentration sent to Blynk virtual pin V3 in real-time
+- Environmental data sent to Blynk: Temperature (V1), Humidity (V2), CO2 (V3) every 60 seconds
+- Automatic control logic: Fan based on CO2 thresholds, Humidifier based on humidity thresholds
+- CO2 sensor ASC (Automatic Self-Calibration) disabled for mushroom chamber use
 - Non-blocking loop implementation for responsive Blynk command processing
 - WiFi provisioning working
 - Blynk cloud connectivity working
-- State machine and LED indication working
-- Configuration reset via button working
+- State machine and LED indication (GPIO 14) working
+- Configuration reset via button (GPIO 0) working
 - OTA update capability present
 

@@ -1,7 +1,7 @@
 # Project Brief: ShroomBox ESP32 IoT Device
 
 ## Project Overview
-ShroomBox is an ESP32-based IoT device project using the Blynk.Edgent framework. The device provides remote control capabilities through the Blynk platform, enabling mobile and web interfaces for device management.
+ShroomBox is an ESP32-based IoT device for environmental monitoring and control of a mushroom fruiting chamber, using the Blynk.Edgent framework. The device provides remote control and monitoring capabilities through the Blynk platform, enabling mobile and web interfaces for environmental management.
 
 ## Core Requirements
 
@@ -15,22 +15,28 @@ ShroomBox is an ESP32-based IoT device project using the Blynk.Edgent framework.
 ### Key Features
 - WiFi connectivity with dynamic provisioning
 - Blynk cloud integration
-- LED control via Blynk virtual pin (V0) - immediate response
+- Fan control (GPIO 25) via Blynk virtual pin V0 - manual and automatic modes
+- Humidifier control (GPIO 26) via Blynk virtual pin V4 - manual and automatic modes
+- Auto mode toggle via Blynk virtual pin V5
 - CO2 sensor integration (SCD30) - reads CO2, temperature, and humidity
-- CO2 data transmission to Blynk virtual pin (V3) in real-time
+- Environmental data transmission to Blynk: Temperature (V1), Humidity (V2), CO2 (V3)
+- Automatic environmental control based on CO2 and humidity thresholds
 - Non-blocking loop implementation for responsive operation
 - State machine-based operation
 - Configuration persistence using ESP32 Preferences
 - Web-based configuration portal
 - OTA firmware update capability
+- LED state indication (GPIO 14)
 
 ## Project Scope
 
 ### In Scope
 - ESP32 device firmware development
 - Blynk.Edgent framework integration
-- LED control functionality
+- Fan and humidifier control for mushroom chamber
+- Automatic environmental control based on sensor thresholds
 - CO2 sensor (SCD30) integration via I2C
+- Temperature and humidity monitoring
 - WiFi provisioning and management
 - Cloud connectivity
 - Device state management
@@ -43,8 +49,11 @@ ShroomBox is an ESP32-based IoT device project using the Blynk.Edgent framework.
 ## Success Criteria
 - Device successfully connects to WiFi
 - Device connects to Blynk cloud
-- LED can be controlled remotely via Blynk app (immediate response)
-- CO2 sensor data is transmitted to Blynk cloud (virtual pin V3)
+- Fan can be controlled remotely via Blynk app (virtual pin V0)
+- Humidifier can be controlled remotely via Blynk app (virtual pin V4)
+- Auto mode can be toggled via Blynk app (virtual pin V5)
+- Environmental sensor data (CO2, temperature, humidity) is transmitted to Blynk cloud (V1, V2, V3)
+- Automatic control maintains optimal CO2 and humidity levels
 - Configuration can be reset via physical button
 - OTA updates work correctly
 - Device state is clearly indicated via LED
@@ -54,5 +63,5 @@ ShroomBox is an ESP32-based IoT device project using the Blynk.Edgent framework.
 - Must use Blynk.Edgent framework
 - Template ID: TMPL4JzPZ45yp
 - Template Name: ShroomBox
-- Firmware Version: 0.1.0
+- Firmware Version: 0.1.2
 

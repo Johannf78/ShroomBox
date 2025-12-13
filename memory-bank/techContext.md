@@ -4,8 +4,11 @@
 
 ### Hardware Platform
 - **ESP32 Development Module** (`USE_ESP32_DEV_MODULE`)
-- GPIO 2 for LED control (user-defined)
+- GPIO 14 for LED state indication
 - GPIO 0 for reset button (board default)
+- GPIO 25 for fan control (output)
+- GPIO 26 for humidifier control (output)
+- GPIO 12 for heater control (defined, not yet used)
 - GPIO 21 (SDA) and GPIO 22 (SCL) for I2C communication with CO2 sensor
 - Built-in WiFi and Bluetooth capabilities
 
@@ -60,7 +63,7 @@
 #### Preprocessor Defines
 - `BLYNK_TEMPLATE_ID`: "TMPL4JzPZ45yp"
 - `BLYNK_TEMPLATE_NAME`: "ShroomBox"
-- `BLYNK_FIRMWARE_VERSION`: "0.1.0"
+- `BLYNK_FIRMWARE_VERSION`: "0.1.2"
 - `USE_ESP32_DEV_MODULE`: Board type
 - `APP_DEBUG`: Enable debug output
 - `BLYNK_PRINT`: Serial output for Blynk logs
@@ -101,8 +104,8 @@
 - **Button Press Time (Action)**: 50ms minimum
 - **State Transition**: Immediate (no delays)
 - **Main Loop Delay**: 10ms between iterations (for BlynkEdgent.run())
-- **CO2 Sensor Read Interval**: 5 seconds (non-blocking timer-based)
-- **CO2 Sensor Blocking Delay**: 1.5 seconds (inside readCO2(), only runs every 5s)
+- **CO2 Sensor Read Interval**: 60 seconds (60000ms, non-blocking timer-based)
+- **CO2 Sensor Blocking Delay**: 1.5 seconds (inside readCO2(), only runs every 60s)
 
 ## Dependencies
 
@@ -135,8 +138,10 @@
 2. **Connect to AP**: Device creates "Blynk ShroomBox-XXXX" network
 3. **Configure**: Access web portal or use Blynk app
 4. **Verify Connection**: Check serial output for connection status
-5. **Test Control**: Use Blynk app to control LED (V0)
-6. **Test Reset**: Hold button 10 seconds to reset config
+5. **Test Control**: Use Blynk app to control fan (V0), humidifier (V4), and auto mode (V5)
+6. **Test Sensors**: Verify CO2 (V3), temperature (V1), and humidity (V2) data in Blynk app
+7. **Test Auto Mode**: Enable auto mode and verify automatic control based on thresholds
+8. **Test Reset**: Hold button 10 seconds to reset config
 
 ### Debugging
 - **Serial Monitor**: Primary debugging tool
@@ -154,7 +159,9 @@
 2. **Web Portal**: Basic HTML form (no filesystem assets by default)
 3. **OTA Updates**: Requires stable connection, may fail on poor WiFi
 4. **Button**: GPIO 0 may conflict with boot mode (hold during boot)
-5. **LED**: GPIO 2 may have boot-time behavior on some boards
+5. **LED**: GPIO 14 used for state indication
+6. **Fan/Humidifier**: GPIO 25 and 26 are outputs, ensure proper relay/transistor drive
+7. **CO2 Sensor**: ASC disabled for mushroom chamber - requires manual calibration if needed
 
 ## Performance Characteristics
 - **Boot Time**: ~2-3 seconds to serial output
