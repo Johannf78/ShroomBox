@@ -57,7 +57,7 @@ An ESP32-based IoT device for environmental monitoring and automated control of 
    - Install "ESP32" board package
 3. **Required Libraries** (install via Library Manager):
    - **Blynk Library** (latest version with Edgent support) Search Arduino IDE Library Manager for Blynk, install the one by Volodymyr
-   - **SensirionI2cScd30** (for CO2 sensor) Search Arduino IDE Library Manager for "Sensirion core", install the one by Sensirion
+   - **SensirionI2cScd30** (for CO2 sensor) Search Arduino IDE Library Manager for "Sensirion core", install the one by Sensirion. https://github.com/Sensirion/arduino-core/ 
 
 ### Setup Steps
 
