@@ -73,7 +73,7 @@ float temperature = 0.0;
 float humidity = 0.0;
 
 //The maximum CO2 allowed before the fan turns on.
-float co2Max = 1250.0;
+float co2Max = 900.0; //1250
 float co2Variation = 150.0;
 
 //The minimum humidity allowed before the humidifier turns on.
@@ -150,10 +150,10 @@ void setup()
 }
 
 
-int fanValueCurrent = -1;    // Read your fan value 
+int fanValueCurrently = -1;    // Read your fan value 
 int fanValueLast = -1;            // Some value that's NOT possible for PIN_FAN at start
 int humidifierValueLast = -1; 
-int humidifierValueCurrent = -1;  
+int humidifierValueCurrently = -1;  
 
 void loop() {
   BlynkEdgent.run();
@@ -168,23 +168,23 @@ void loop() {
 
   if (autoOn){
     if (co2Concentration > co2Max) {
-      fanValueCurrent = HIGH;
-      digitalWrite(PIN_FAN, fanValueCurrent);
+      fanValueCurrently = HIGH;
+      digitalWrite(PIN_FAN, fanValueCurrently);
     }
     else
     {
       if (co2Concentration < co2Max- co2Variation){
-        fanValueCurrent = LOW;
+        fanValueCurrently = LOW;
         digitalWrite(PIN_FAN, LOW);
         //Only turn on the humidifier if the fan is turned of.
         if (humidity < humidityMin){
-          humidifierValueCurrent = HIGH;
-          digitalWrite(PIN_HUMIDIFIER, humidifierValueCurrent);
+          humidifierValueCurrently = HIGH;
+          digitalWrite(PIN_HUMIDIFIER, humidifierValueCurrently);
         }
         else
         {
           if (humidity > humidityMin + humidityVariation){
-            humidifierValueCurrent = LOW;
+            humidifierValueCurrently = LOW;
             digitalWrite(PIN_HUMIDIFIER, LOW);
           }
         }
@@ -194,14 +194,14 @@ void loop() {
 
 
   //If value changed, update Blynk. So, only update Blynk if the value has changed.
-  if (fanValueCurrent != fanValueLast) {
-    Blynk.virtualWrite(V0, fanValueCurrent);
-    fanValueLast = fanValueCurrent;
+  if (fanValueCurrently != fanValueLast) {
+    Blynk.virtualWrite(V0, fanValueCurrently);
+    fanValueLast = fanValueCurrently;
   }
 
-  if (humidifierValueCurrent != humidifierValueLast) {
-    Blynk.virtualWrite(V4, humidifierValueCurrent);
-    humidifierValueLast = humidifierValueCurrent;
+  if (humidifierValueCurrently != humidifierValueLast) {
+    Blynk.virtualWrite(V4, humidifierValueCurrently);
+    humidifierValueLast = humidifierValueCurrently;
   }
 
 }
