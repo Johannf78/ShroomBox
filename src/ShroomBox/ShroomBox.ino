@@ -133,8 +133,6 @@ void initCO2();
 void readCO2();
 void calibrateCO2();
 
-
-
 void setup()
 {
   pinMode(PIN_FAN, OUTPUT);
@@ -218,91 +216,4 @@ void loop() {
     humidifierValueLast = humidifierValueCurrently;
   }
 
-}
-
-
-void calibrateCO2() {
-  Serial.println("Starting CO2 calibration...");
-  Serial.println("Make sure the chamber air is at a known reference (e.g. 400 ppm).");
-
-  // Stop measurement before calibration (recommended)
-  error = sensor.stopPeriodicMeasurement();
-  if (error != NO_ERROR) {
-    Serial.print("Error stopping measurement: ");
-    errorToString(error, errorMessage, sizeof(errorMessage));
-    Serial.println(errorMessage);
-    return;
-  }
-
-  delay(500);
-
-  // Force recalibration to 400 ppm (adjust if you use a different reference)
-  uint16_t refPpm = 400;
-  error = sensor.forceRecalibration(refPpm);
-  if (error != NO_ERROR) {
-    Serial.print("Error setting forced recalibration: ");
-    errorToString(error, errorMessage, sizeof(errorMessage));
-    Serial.println(errorMessage);
-    return;
-  }
-
-  Serial.print("Calibration command sent with reference ");
-  Serial.print(refPpm);
-  Serial.println(" ppm.");
-
-  // Restart measurement
-  error = sensor.startPeriodicMeasurement(0);
-  if (error != NO_ERROR) {
-    Serial.print("Error restarting measurement: ");
-    errorToString(error, errorMessage, sizeof(errorMessage));
-    Serial.println(errorMessage);
-    return;
-  }
-
-  Serial.println("Measurement restarted after calibration.");
-}
-
-
-BLYNK_WRITE(V0)
-{
-  int value = param.asInt();
-
-  if (value == 1) {
-    digitalWrite(PIN_FAN, HIGH);
-    Serial.print("PIN_FAN =");
-    Serial.println(value);
-  } else {
-    digitalWrite(PIN_FAN, LOW);
-    Serial.print("PIN_FAN = ");
-    Serial.println(value);
-  }
-}
-BLYNK_WRITE(V4)
-{
-  int value = param.asInt();
-
-  if (value == 1) {
-    digitalWrite(PIN_HUMIDIFIER, HIGH);
-    Serial.print("PIN_HUMIDIFIER =");
-    Serial.println(value);
-  } else {
-    digitalWrite(PIN_HUMIDIFIER, LOW);
-    Serial.print("PIN_HUMIDIFIER = ");
-    Serial.println(value);
-  }
-}
-
-BLYNK_WRITE(V5)
-{
-  int value = param.asInt();
-
-  if (value == 1) {
-    autoOn = true;
-    Serial.print("autoOn =");
-    Serial.println(value);
-  } else {
-    autoOn = false;
-    Serial.print("autoOn = ");
-    Serial.println(value);
-  }
 }
