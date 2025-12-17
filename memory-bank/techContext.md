@@ -76,7 +76,18 @@
 ### Serial Configuration
 - **Baud Rate**: 115200
 - **Output**: Debug messages, state transitions, connection status
+- **Input**: Command interface for manual control and calibration
 - **Format**: Plain text with timestamps (via Blynk logging)
+
+### Serial Commands
+| Command | Description |
+|---------|-------------|
+| `CALIBRATE` | Calibrate CO2 sensor to 400 ppm (default) |
+| `CALIBRATE [ppm]` | Calibrate CO2 sensor to specified PPM (e.g., `CALIBRATE 420`) |
+| `f1` | Turn fan ON |
+| `f0` | Turn fan OFF |
+| `h1` | Turn humidifier ON |
+| `h0` | Turn humidifier OFF |
 
 ## Technical Constraints
 
@@ -104,8 +115,9 @@
 - **Button Press Time (Action)**: 50ms minimum
 - **State Transition**: Immediate (no delays)
 - **Main Loop Delay**: 10ms between iterations (for BlynkEdgent.run())
-- **CO2 Sensor Read Interval**: 60 seconds (60000ms, non-blocking timer-based)
-- **CO2 Sensor Blocking Delay**: 1.5 seconds (inside readCO2(), only runs every 60s)
+- **CO2 Sensor Read Interval**: 5 seconds (5000ms, non-blocking timer-based)
+- **Blynk Update Interval**: 60 seconds (60000ms, non-blocking timer-based)
+- **CO2 Sensor Blocking Delay**: 1.5 seconds (inside readCO2(), only runs every 5s)
 
 ## Dependencies
 
@@ -141,13 +153,15 @@
 5. **Test Control**: Use Blynk app to control fan (V0), humidifier (V4), and auto mode (V5)
 6. **Test Sensors**: Verify CO2 (V3), temperature (V1), and humidity (V2) data in Blynk app
 7. **Test Auto Mode**: Enable auto mode and verify automatic control based on thresholds
-8. **Test Reset**: Hold button 10 seconds to reset config
+8. **Test Serial Commands**: Use serial monitor to test CALIBRATE, f0, f1, h0, h1 commands
+9. **Test Reset**: Hold button 10 seconds to reset config
 
 ### Debugging
 - **Serial Monitor**: Primary debugging tool
 - **LED Indicator**: Visual state feedback
 - **State Logging**: State transitions logged to serial
 - **Error Codes**: Stored in config for troubleshooting
+- **Serial Commands**: Direct control for testing
 
 ## Build Output
 - **Firmware Binary**: `.bin` file for OTA updates
@@ -161,7 +175,7 @@
 4. **Button**: GPIO 0 may conflict with boot mode (hold during boot)
 5. **LED**: GPIO 14 used for state indication
 6. **Fan/Humidifier**: GPIO 25 and 26 are outputs, ensure proper relay/transistor drive
-7. **CO2 Sensor**: ASC disabled for mushroom chamber - requires manual calibration if needed
+7. **CO2 Sensor**: ASC disabled for mushroom chamber - requires manual calibration via serial
 
 ## Performance Characteristics
 - **Boot Time**: ~2-3 seconds to serial output
@@ -184,4 +198,3 @@
 - **Additional Sensors**: GPIO pins available for expansion
 - **Power Management**: Deep sleep for battery operation
 - **Multi-Device**: Support for multiple devices from same codebase
-

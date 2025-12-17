@@ -14,6 +14,7 @@
 - ✅ **Configuration Persistence**: Settings saved to flash and loaded on boot
 - ✅ **Web Portal**: Basic web interface for WiFi and Blynk configuration
 - ✅ **Serial Debugging**: Comprehensive serial output for debugging
+- ✅ **Serial Commands**: Manual control and calibration via serial interface
 
 ### Framework Features
 - ✅ **Blynk.Inject**: Dynamic WiFi provisioning working
@@ -30,11 +31,22 @@
 - ✅ **CO2 Sensor (SCD30)**: I2C communication initialized (GPIO 21/22)
 - ✅ **CO2 Sensor Reading**: Reads CO2 concentration, temperature, and humidity
 - ✅ **CO2 Sensor ASC**: Automatic Self-Calibration disabled for mushroom chamber use
+- ✅ **CO2 Calibration**: Force recalibration via serial with custom PPM value
 - ✅ **Sensor Blynk Integration**: Temperature (V1), Humidity (V2), CO2 (V3) sent to Blynk
 - ✅ **Automatic Control**: Fan and humidifier automatically controlled based on sensor thresholds
-- ✅ **Non-Blocking Loop**: Timer-based CO2 reading (60-second interval) - responds immediately
+- ✅ **Non-Blocking Loop**: Timer-based CO2 reading (5-second interval) - responds immediately
 - ✅ **WiFi**: Station and Access Point modes working
-- ✅ **Serial**: Debug output at 115200 baud
+- ✅ **Serial**: Debug output and command interface at 115200 baud
+
+### Serial Command Interface
+| Command | Description | Status |
+|---------|-------------|--------|
+| `CALIBRATE` | Calibrate CO2 sensor to 400 ppm (default) | ✅ Working |
+| `CALIBRATE [ppm]` | Calibrate CO2 sensor to specified PPM | ✅ Working |
+| `f1` | Turn fan ON | ✅ Working |
+| `f0` | Turn fan OFF | ✅ Working |
+| `h1` | Turn humidifier ON | ✅ Working |
+| `h0` | Turn humidifier OFF | ✅ Working |
 
 ## What's Left to Build 🚧
 
@@ -54,6 +66,7 @@
 
 ### Documentation
 - ✅ **Memory Bank**: Complete project documentation created
+- ✅ **README**: Updated with serial commands and current features
 - ⏳ **User Guide**: End-user setup and usage instructions
 - ⏳ **Developer Guide**: Code structure and extension guide
 - ⏳ **Troubleshooting Guide**: Common issues and solutions
@@ -75,6 +88,7 @@ The project has all core features implemented, tested, and confirmed working:
 - Remote control (Fan via V0, Humidifier via V4, Auto mode via V5) ✅
 - Environmental monitoring (Temperature V1, Humidity V2, CO2 V3) ✅ - **Tested and verified working**
 - Automatic environmental control ✅ - **Fan and humidifier auto-control working**
+- Serial command interface ✅ - **Manual control and CO2 calibration working**
 - State indication ✅
 - Configuration management ✅
 
@@ -84,6 +98,7 @@ The project has all core features implemented, tested, and confirmed working:
 - ✅ Follows Blynk.Edgent patterns
 - ✅ Good error handling foundation
 - ✅ Comprehensive state management
+- ✅ Extensible serial command parser
 
 ## Known Issues 🐛
 
@@ -111,8 +126,10 @@ No critical issues have been identified. The project appears to be in a stable, 
 - ✅ LED indication patterns
 - ✅ CO2 sensor initialization and reading (Serial output verified)
 - ✅ CO2 sensor ASC disabled for mushroom chamber
+- ✅ CO2 sensor calibration via serial with custom PPM
 - ✅ Environmental data transmission to Blynk (Temperature V1, Humidity V2, CO2 V3)
 - ✅ Automatic control logic (fan based on CO2, humidifier based on humidity)
+- ✅ Serial commands (f0, f1, h0, h1, CALIBRATE)
 
 ### Not Yet Tested ⏳
 - ⏳ OTA firmware updates
@@ -149,6 +166,7 @@ No critical issues have been identified. The project appears to be in a stable, 
 - ✅ Auto mode can be toggled (V5) - **Tested and working**
 - ✅ Environmental sensor data transmitted to Blynk (V1, V2, V3) - **Tested and verified**
 - ✅ Automatic control maintains optimal conditions - **Tested and working**
+- ✅ CO2 calibration via serial with custom PPM - **Tested and working**
 - ✅ Device state is clearly indicated
 - ✅ Configuration can be reset
 
@@ -164,6 +182,6 @@ No critical issues have been identified. The project appears to be in a stable, 
 - Core functionality is complete and working
 - Mushroom chamber environmental control system operational
 - Automatic control logic working for fan and humidifier
+- Serial command interface allows local control and calibration
 - Good foundation for future expansion (heater control, configurable thresholds)
 - Framework provides solid base for IoT development
-

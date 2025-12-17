@@ -28,6 +28,10 @@
 │  │  Hardware │  │◄─── LED, Button, Fan, Humidifier, CO2 Sensor
 │  │  Control  │  │
 │  └───────────┘  │
+│  ┌───────────┐  │
+│  │  Serial   │  │◄─── Command Interface (CALIBRATE, f0/f1, h0/h1)
+│  │  Commands │  │
+│  └───────────┘  │
 └─────────────────┘
 ```
 
@@ -66,7 +70,7 @@ Each major component is in its own header file:
 - `Settings.h`: Board-specific configuration
 - `OTA.h`: Over-the-air update handling
 - `Console.h`: Serial console interface
-- `func_co2_sensor.ino`: CO2 sensor functions (initCO2, readCO2)
+- `func_co2_sensor.ino`: CO2 sensor functions (initCO2, readCO2, calibrateCO2)
 
 **Rationale**: Modular structure makes code maintainable and allows easy extension.
 
@@ -77,6 +81,14 @@ Each major component is in its own header file:
 - Visual feedback for button actions
 
 **Rationale**: Visual feedback is essential for user experience and debugging.
+
+### 5. Serial Command Interface
+- Command parsing via `Serial.readStringUntil('\n')`
+- Case-insensitive command matching with `equalsIgnoreCase()` and `startsWith()`
+- Parameter extraction using `indexOf()` and `substring()`
+- Supports commands: CALIBRATE [ppm], f0, f1, h0, h1
+
+**Rationale**: Serial commands enable local control and calibration without network access.
 
 ## Design Patterns in Use
 
@@ -98,11 +110,15 @@ Each major component is in its own header file:
 - Button interrupts trigger state changes
 - LED indicator observes state changes and updates display
 
+### 5. Command Pattern
+- Serial command interface processes text commands
+- Each command triggers specific action (calibrate, toggle fan/humidifier)
+
 ## Component Relationships
 
 ### Core Dependencies
 ```
-Edgent_ESP32.ino
+ShroomBox.ino
     │
     ├──► BlynkEdgent.h
     │       │
@@ -115,23 +131,36 @@ Edgent_ESP32.ino
     │       ├──► Console.h
     │       └──► Settings.h
     │
-    └──► User Code (BLYNK_WRITE handlers)
+    ├──► func_co2_sensor.ino
+    │       │
+    │       ├──► initCO2()
+    │       ├──► readCO2()
+    │       ├──► calibrateCO2(refPpm)
+    │       └──► disableASC()
+    │
+    └──► User Code (BLYNK_WRITE handlers, Serial command handling)
 ```
 
 ### Data Flow
 1. **Configuration Flow**:
    - User input → Web portal → ConfigStore → Preferences → Flash
    
-2. **Control Flow**:
+2. **Control Flow (Blynk)**:
    - Blynk app → Blynk cloud → Blynk library → BLYNK_WRITE handler → Hardware
    
-3. **Sensor Flow** (Current):
+3. **Control Flow (Serial)**:
+   - Serial Monitor → Serial.readStringUntil() → Command parsing → Action (calibrate/toggle)
+   
+4. **Sensor Flow** (Current):
    - CO2 Sensor (I2C) → readCO2() → Serial output + Blynk virtual pins V1, V2, V3 → Blynk cloud
-   - Timer-based non-blocking reading (every 60 seconds)
+   - Timer-based non-blocking reading (every 5 seconds for sensor, 60 seconds for Blynk)
    - Temperature (V1), Humidity (V2), and CO2 (V3) all sent to Blynk
    - Automatic control logic uses sensor data to control fan and humidifier
    
-4. **State Flow**:
+5. **Calibration Flow**:
+   - Serial command "CALIBRATE [ppm]" → calibrateCO2(refPpm) → sensor.forceRecalibration()
+   
+6. **State Flow**:
    - Events → State machine → State handlers → LED indicator → Visual feedback
 
 ## Key Abstractions
@@ -151,6 +180,12 @@ Edgent_ESP32.ino
 - Supports multiple LED types (RGB, single, WS2812)
 - Animation system (beat, wave patterns)
 
+### 4. CO2 Sensor Functions
+- `initCO2()`: Initialize sensor and disable ASC
+- `readCO2()`: Read CO2, temperature, humidity
+- `calibrateCO2(uint16_t refPpm = 400)`: Force recalibration to reference PPM
+- `disableASC()`: Disable automatic self-calibration
+
 ## Configuration Management
 
 ### Board Configuration
@@ -165,6 +200,12 @@ Edgent_ESP32.ino
 - Cloud host/port
 - Static IP settings (optional)
 - Stored in Preferences, loaded on boot
+
+### Environmental Thresholds (Hardcoded)
+- CO2 Max: 900 ppm (fan turns ON)
+- CO2 Variation: 150 ppm (fan turns OFF at 750 ppm)
+- Humidity Min: 70% (humidifier turns ON)
+- Humidity Variation: 15% (humidifier turns OFF at 85%)
 
 ## Error Handling
 
@@ -188,7 +229,9 @@ Edgent_ESP32.ino
 - Runs `BlynkEdgent.run()` loop continuously (every 10ms)
 - Handles state machine transitions
 - Processes Blynk events immediately (non-blocking)
-- Timer-based CO2 sensor reading (every 60 seconds) using millis()
+- Timer-based CO2 sensor reading (every 5 seconds) using millis()
+- Timer-based Blynk updates (every 60 seconds) using millis()
+- Serial command processing
 - Automatic control logic checks sensor values and updates fan/humidifier states
 - Updates Blynk virtual pins only when values change (optimization)
 
@@ -201,3 +244,28 @@ Edgent_ESP32.ino
 - Button interrupt for reset functionality
 - Non-blocking, sets flags for main thread
 
+## Serial Command Processing
+
+### Command Format
+- Commands are newline-terminated (`\n`)
+- Whitespace is trimmed
+- Case-insensitive matching for commands
+- Parameters separated by space
+
+### Command Parsing Pattern
+```cpp
+if (Serial.available()) {
+  String cmd = Serial.readStringUntil('\n');
+  cmd.trim();
+  
+  if (cmd.startsWith("CALIBRATE") || cmd.startsWith("calibrate")) {
+    uint16_t refPpm = 400;  // default
+    int spaceIndex = cmd.indexOf(' ');
+    if (spaceIndex > 0) {
+      refPpm = cmd.substring(spaceIndex + 1).toInt();
+    }
+    calibrateCO2(refPpm);
+  }
+  // ... other commands
+}
+```

@@ -74,6 +74,48 @@ void disableASC() {
 }
 
 
+void calibrateCO2(uint16_t refPpm) {
+
+  Serial.println("Starting CO2 calibration...");
+  Serial.println("Make sure the chamber air is at a known reference (e.g. 400 ppm).");
+
+  // Stop measurement before calibration (recommended)
+  error = sensor.stopPeriodicMeasurement();
+  if (error != NO_ERROR) {
+    Serial.print("Error stopping measurement: ");
+    errorToString(error, errorMessage, sizeof(errorMessage));
+    Serial.println(errorMessage);
+    return;
+  }
+
+  delay(500);
+
+  // Force recalibration to 400 ppm (adjust if you use a different reference)
+  //uint16_t refPpm = 420;
+  error = sensor.forceRecalibration(refPpm);
+  if (error != NO_ERROR) {
+    Serial.print("Error setting forced recalibration: ");
+    errorToString(error, errorMessage, sizeof(errorMessage));
+    Serial.println(errorMessage);
+    return;
+  }
+
+  Serial.print("Calibration command sent with reference ");
+  Serial.print(refPpm);
+  Serial.println(" ppm.");
+
+  // Restart measurement
+  error = sensor.startPeriodicMeasurement(0);
+  if (error != NO_ERROR) {
+    Serial.print("Error restarting measurement: ");
+    errorToString(error, errorMessage, sizeof(errorMessage));
+    Serial.println(errorMessage);
+    return;
+  }
+
+  Serial.println("Measurement restarted after calibration.");
+}
+
 void readCO2() {
   
 
@@ -96,11 +138,6 @@ void readCO2() {
     Serial.print(humidity);
     Serial.println();
 
-    // Send CO2 concentration to Blynk if connected
-    if (Blynk.connected()) {
-        Blynk.virtualWrite(V1, temperature);
-        Blynk.virtualWrite(V2, humidity);
-        Blynk.virtualWrite(V3, co2Concentration);
-    }
+
 
 }
