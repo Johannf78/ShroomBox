@@ -12,18 +12,22 @@ ShroomBox is an ESP32-based IoT device for environmental monitoring and control 
 4. **Device Indication**: Visual state indication using physical LED
 5. **Configuration Management**: Credentials reset using physical button
 6. **Local Control**: Serial command interface for local control and calibration
+7. **Threshold Configuration**: Configurable control thresholds with persistence
 
 ### Key Features
 - WiFi connectivity with dynamic provisioning
 - Blynk cloud integration
 - Fan control (GPIO 25) via Blynk virtual pin V0 - manual and automatic modes
 - Humidifier control (GPIO 26) via Blynk virtual pin V4 - manual and automatic modes
-- Auto mode toggle via Blynk virtual pin V5
+- Auto mode toggle via Blynk virtual pin V5 and serial commands
 - CO2 sensor integration (SCD30) - reads CO2, temperature, and humidity
 - Environmental data transmission to Blynk: Temperature (V1), Humidity (V2), CO2 (V3)
 - Automatic environmental control based on CO2 and humidity thresholds
+- **Configurable thresholds** - All control thresholds can be set via serial commands
+- **Threshold persistence** - All thresholds saved to flash memory, survive reboots
 - CO2 sensor calibration via serial with custom PPM value
-- Serial command interface for local control (CALIBRATE, f0, f1, h0, h1)
+- Serial command interface for local control, calibration, and configuration
+- Built-in help system for command discovery
 - Non-blocking loop implementation for responsive operation
 - State machine-based operation
 - Configuration persistence using ESP32 Preferences
@@ -45,22 +49,28 @@ ShroomBox is an ESP32-based IoT device for environmental monitoring and control 
 - Cloud connectivity
 - Device state management
 - Serial command interface
+- Threshold configuration and persistence
 
 ### Out of Scope (Currently)
 - Additional sensor integrations (future expansion)
 - Custom mobile app development (uses Blynk app)
 - Local web server beyond configuration portal
+- Blynk-based threshold configuration (currently serial-only)
 
 ## Success Criteria
 - Device successfully connects to WiFi
 - Device connects to Blynk cloud
 - Fan can be controlled remotely via Blynk app (virtual pin V0)
 - Humidifier can be controlled remotely via Blynk app (virtual pin V4)
-- Auto mode can be toggled via Blynk app (virtual pin V5)
+- Auto mode can be toggled via Blynk app (virtual pin V5) or serial commands
 - Environmental sensor data (CO2, temperature, humidity) is transmitted to Blynk cloud (V1, V2, V3)
 - Automatic control maintains optimal CO2 and humidity levels
 - CO2 sensor can be calibrated via serial command with custom PPM value
 - Fan and humidifier can be controlled via serial commands
+- Auto mode can be toggled via serial commands
+- All control thresholds can be configured via serial commands
+- Threshold settings persist across reboots
+- Built-in help system displays all available commands
 - Configuration can be reset via physical button
 - OTA updates work correctly
 - Device state is clearly indicated via LED

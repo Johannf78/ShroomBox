@@ -18,7 +18,7 @@
   - Provides: WiFi provisioning, OTA updates, cloud connectivity
 - **BlynkSimpleEsp32_SSL**: Blynk library for ESP32 with SSL support
 - **WiFi.h**: ESP32 WiFi library
-- **Preferences.h**: ESP32 non-volatile storage
+- **Preferences.h**: ESP32 non-volatile storage (used for threshold persistence)
 - **WebServer.h**: HTTP server for configuration portal
 - **DNSServer.h**: DNS server for captive portal
 - **Update.h**: OTA firmware update support
@@ -76,18 +76,27 @@
 ### Serial Configuration
 - **Baud Rate**: 115200
 - **Output**: Debug messages, state transitions, connection status
-- **Input**: Command interface for manual control and calibration
+- **Input**: Command interface for manual control, calibration, and configuration
 - **Format**: Plain text with timestamps (via Blynk logging)
 
 ### Serial Commands
-| Command | Description |
-|---------|-------------|
-| `CALIBRATE` | Calibrate CO2 sensor to 400 ppm (default) |
-| `CALIBRATE [ppm]` | Calibrate CO2 sensor to specified PPM (e.g., `CALIBRATE 420`) |
-| `f1` | Turn fan ON |
-| `f0` | Turn fan OFF |
-| `h1` | Turn humidifier ON |
-| `h0` | Turn humidifier OFF |
+| Command | Description | Parameters |
+|---------|-------------|------------|
+| `HELP` or `?` | Display all available commands | None |
+| `CALIBRATE` | Calibrate CO2 sensor to 400 ppm (default) | None |
+| `CALIBRATE [ppm]` | Calibrate CO2 sensor to specified PPM | PPM value (e.g., 420) |
+| `f1` | Turn fan ON | None |
+| `f0` | Turn fan OFF | None |
+| `h1` | Turn humidifier ON | None |
+| `h0` | Turn humidifier OFF | None |
+| `a1` | Enable auto mode | None |
+| `a0` | Disable auto mode | None |
+| `SET_CO2_MAX <val>` | Set CO2 max threshold | 400-5000 ppm |
+| `SET_CO2_VAR <val>` | Set CO2 variation/hysteresis | 50-500 ppm |
+| `SET_HUM_MIN <val>` | Set humidity min threshold | 0-100 % |
+| `SET_HUM_VAR <val>` | Set humidity variation | 5-50 % |
+| `GET_THRESHOLDS` | Display current threshold values | None |
+| `RESET_THRESHOLDS` | Reset thresholds to defaults | None |
 
 ## Technical Constraints
 
@@ -95,6 +104,7 @@
 - **Flash**: Varies by ESP32 model (typically 4MB+)
 - **RAM**: Limited heap for WiFi and Blynk operations
 - **Preferences**: Limited to ~64KB (ESP32 limitation)
+- **Threshold Storage**: ~16 bytes (4 floats) in Preferences namespace
 
 ### Network Constraints
 - **WiFi**: 2.4GHz only (ESP32 limitation)
@@ -108,6 +118,8 @@
 - **WiFi Password**: Max 63 characters
 - **Blynk Token**: 32 characters (alphanumeric + dash/underscore)
 - **Cloud Host**: Max 33 characters
+- **Threshold Namespace**: "thresholds" (separate from Blynk config)
+- **Threshold Keys**: "co2Max", "co2Var", "humMin", "humVar"
 
 ### Timing Constraints
 - **Button Hold Time (Indication)**: 3 seconds
@@ -123,7 +135,7 @@
 
 ### Required ESP32 Features
 - WiFi (Station and Access Point modes)
-- Preferences (non-volatile storage)
+- Preferences (non-volatile storage) - **Used for threshold persistence**
 - WebServer (HTTP server)
 - DNSServer (DNS for captive portal)
 - Update (OTA firmware updates)
@@ -153,8 +165,9 @@
 5. **Test Control**: Use Blynk app to control fan (V0), humidifier (V4), and auto mode (V5)
 6. **Test Sensors**: Verify CO2 (V3), temperature (V1), and humidity (V2) data in Blynk app
 7. **Test Auto Mode**: Enable auto mode and verify automatic control based on thresholds
-8. **Test Serial Commands**: Use serial monitor to test CALIBRATE, f0, f1, h0, h1 commands
-9. **Test Reset**: Hold button 10 seconds to reset config
+8. **Test Serial Commands**: Use serial monitor to test all commands
+9. **Test Threshold Configuration**: Set thresholds via serial, verify persistence after reboot
+10. **Test Reset**: Hold button 10 seconds to reset config
 
 ### Debugging
 - **Serial Monitor**: Primary debugging tool
@@ -162,11 +175,12 @@
 - **State Logging**: State transitions logged to serial
 - **Error Codes**: Stored in config for troubleshooting
 - **Serial Commands**: Direct control for testing
+- **Help Command**: Type `HELP` to see all available commands
 
 ## Build Output
 - **Firmware Binary**: `.bin` file for OTA updates
 - **Partition Table**: Default (app + OTA)
-- **Flash Layout**: App partition + OTA partition + NVS
+- **Flash Layout**: App partition + OTA partition + NVS (Non-Volatile Storage)
 
 ## Known Technical Limitations
 1. **WiFi AP Mode**: Limited to 4 connected stations
@@ -176,6 +190,7 @@
 5. **LED**: GPIO 14 used for state indication
 6. **Fan/Humidifier**: GPIO 25 and 26 are outputs, ensure proper relay/transistor drive
 7. **CO2 Sensor**: ASC disabled for mushroom chamber - requires manual calibration via serial
+8. **Threshold Persistence**: Uses Preferences API (limited write cycles, but sufficient for this use case)
 
 ## Performance Characteristics
 - **Boot Time**: ~2-3 seconds to serial output
@@ -184,6 +199,8 @@
 - **State Transitions**: <100ms
 - **LED Updates**: 20ms-5000ms depending on animation
 - **Main Loop**: ~10ms per iteration
+- **Threshold Load**: <10ms (read from flash on boot)
+- **Threshold Save**: <10ms (write to flash on change)
 
 ## Security Considerations
 - **WiFi**: Uses WPA2+ encryption (user-configured)
@@ -191,6 +208,7 @@
 - **Auth Token**: 32-character token for device authentication
 - **Web Portal**: No authentication (local network only)
 - **OTA Updates**: No signature verification (Blynk handles this)
+- **Serial Commands**: No authentication (local USB connection only)
 
 ## Future Technical Considerations
 - **Filesystem**: Consider LittleFS/SPIFFS for web portal assets
@@ -198,3 +216,4 @@
 - **Additional Sensors**: GPIO pins available for expansion
 - **Power Management**: Deep sleep for battery operation
 - **Multi-Device**: Support for multiple devices from same codebase
+- **Blynk Threshold Control**: Add virtual pins for threshold configuration

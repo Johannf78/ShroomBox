@@ -75,7 +75,6 @@ void disableASC() {
 
 
 void calibrateCO2(uint16_t refPpm) {
-
   Serial.println("Starting CO2 calibration...");
   Serial.println("Make sure the chamber air is at a known reference (e.g. 400 ppm).");
 
@@ -90,8 +89,7 @@ void calibrateCO2(uint16_t refPpm) {
 
   delay(500);
 
-  // Force recalibration to 400 ppm (adjust if you use a different reference)
-  //uint16_t refPpm = 420;
+  // Force recalibration to specified reference PPM (passed as parameter)
   error = sensor.forceRecalibration(refPpm);
   if (error != NO_ERROR) {
     Serial.print("Error setting forced recalibration: ");

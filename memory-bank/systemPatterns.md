@@ -29,8 +29,11 @@
 │  │  Control  │  │
 │  └───────────┘  │
 │  ┌───────────┐  │
-│  │  Serial   │  │◄─── Command Interface (CALIBRATE, f0/f1, h0/h1)
+│  │  Serial   │  │◄─── Command Interface (all commands)
 │  │  Commands │  │
+│  └───────────┘  │
+│  ┌───────────┐  │
+│  │Preferences│◄─── Flash Storage (thresholds, config)
 │  └───────────┘  │
 └─────────────────┘
 ```
@@ -54,10 +57,11 @@ The device uses a state machine to manage different operational modes:
 ### 2. Configuration Storage
 - Uses ESP32 Preferences API for persistent storage
 - Stores WiFi credentials, Blynk token, cloud host/port
+- **Separate namespace for thresholds**: "thresholds" (isolated from Blynk config)
 - Supports static IP configuration
 - Includes error tracking for provisioning failures
 
-**Rationale**: Preferences API provides reliable non-volatile storage without filesystem overhead.
+**Rationale**: Preferences API provides reliable non-volatile storage without filesystem overhead. Separate namespace prevents conflicts.
 
 ### 3. Modular Header File Structure
 Each major component is in its own header file:
@@ -70,7 +74,7 @@ Each major component is in its own header file:
 - `Settings.h`: Board-specific configuration
 - `OTA.h`: Over-the-air update handling
 - `Console.h`: Serial console interface
-- `func_co2_sensor.ino`: CO2 sensor functions (initCO2, readCO2, calibrateCO2)
+- `func_co2_sensor.ino`: CO2 sensor functions (initCO2, readCO2, calibrateCO2, disableASC)
 
 **Rationale**: Modular structure makes code maintainable and allows easy extension.
 
@@ -86,9 +90,19 @@ Each major component is in its own header file:
 - Command parsing via `Serial.readStringUntil('\n')`
 - Case-insensitive command matching with `equalsIgnoreCase()` and `startsWith()`
 - Parameter extraction using `indexOf()` and `substring()`
-- Supports commands: CALIBRATE [ppm], f0, f1, h0, h1
+- Supports commands: HELP, CALIBRATE [ppm], f0, f1, h0, h1, a0, a1, SET_*, GET_THRESHOLDS, RESET_THRESHOLDS
+- Built-in help system for command discovery
 
-**Rationale**: Serial commands enable local control and calibration without network access.
+**Rationale**: Serial commands enable local control, calibration, and configuration without network access.
+
+### 6. Threshold Persistence Pattern
+- **Load on Boot**: `loadThresholds()` called in `setup()` before Blynk initialization
+- **Save on Change**: `saveThresholds()` called automatically when any threshold is modified
+- **Default Fallback**: Uses default values if no saved values exist (first boot)
+- **Validation**: Input validation before saving
+- **Namespace Isolation**: Uses separate Preferences namespace to avoid conflicts
+
+**Rationale**: Provides persistent configuration that survives reboots while maintaining separation from Blynk configuration.
 
 ## Design Patterns in Use
 
@@ -96,6 +110,7 @@ Each major component is in its own header file:
 - `BlynkEdgent`: Single global instance manages device lifecycle
 - `indicator`: Single global Indicator instance
 - `configStore`: Single global configuration store
+- `thresholdPrefs`: Single Preferences instance for thresholds
 
 ### 2. State Pattern
 - State machine implemented via enum and switch statements
@@ -112,7 +127,8 @@ Each major component is in its own header file:
 
 ### 5. Command Pattern
 - Serial command interface processes text commands
-- Each command triggers specific action (calibrate, toggle fan/humidifier)
+- Each command triggers specific action (calibrate, toggle, configure)
+- Help command provides command discovery
 
 ## Component Relationships
 
@@ -138,6 +154,11 @@ ShroomBox.ino
     │       ├──► calibrateCO2(refPpm)
     │       └──► disableASC()
     │
+    ├──► Preferences.h (ESP32)
+    │       │
+    │       ├──► loadThresholds()
+    │       └──► saveThresholds()
+    │
     └──► User Code (BLYNK_WRITE handlers, Serial command handling)
 ```
 
@@ -149,7 +170,7 @@ ShroomBox.ino
    - Blynk app → Blynk cloud → Blynk library → BLYNK_WRITE handler → Hardware
    
 3. **Control Flow (Serial)**:
-   - Serial Monitor → Serial.readStringUntil() → Command parsing → Action (calibrate/toggle)
+   - Serial Monitor → Serial.readStringUntil() → Command parsing → Action (calibrate/toggle/configure)
    
 4. **Sensor Flow** (Current):
    - CO2 Sensor (I2C) → readCO2() → Serial output + Blynk virtual pins V1, V2, V3 → Blynk cloud
@@ -160,7 +181,11 @@ ShroomBox.ino
 5. **Calibration Flow**:
    - Serial command "CALIBRATE [ppm]" → calibrateCO2(refPpm) → sensor.forceRecalibration()
    
-6. **State Flow**:
+6. **Threshold Configuration Flow**:
+   - Serial command "SET_* <value>" → Validation → Update variable → saveThresholds() → Preferences → Flash
+   - On boot: Preferences → loadThresholds() → Update variables
+   
+7. **State Flow**:
    - Events → State machine → State handlers → LED indicator → Visual feedback
 
 ## Key Abstractions
@@ -186,6 +211,11 @@ ShroomBox.ino
 - `calibrateCO2(uint16_t refPpm = 400)`: Force recalibration to reference PPM
 - `disableASC()`: Disable automatic self-calibration
 
+### 5. Threshold Management Functions
+- `loadThresholds()`: Load thresholds from flash on boot
+- `saveThresholds()`: Save thresholds to flash on change
+- Uses Preferences API with separate namespace
+
 ## Configuration Management
 
 ### Board Configuration
@@ -201,11 +231,13 @@ ShroomBox.ino
 - Static IP settings (optional)
 - Stored in Preferences, loaded on boot
 
-### Environmental Thresholds (Hardcoded)
-- CO2 Max: 900 ppm (fan turns ON)
-- CO2 Variation: 150 ppm (fan turns OFF at 750 ppm)
-- Humidity Min: 70% (humidifier turns ON)
-- Humidity Variation: 15% (humidifier turns OFF at 85%)
+### Environmental Thresholds (Configurable with Persistence)
+- **CO2 Max**: Default 950 ppm (fan turns ON) - *Configurable via serial*
+- **CO2 Variation**: Default 100 ppm (fan turns OFF at 850 ppm) - *Configurable via serial*
+- **Humidity Min**: Default 70% (humidifier turns ON) - *Configurable via serial*
+- **Humidity Variation**: Default 15% (humidifier turns OFF at 85%) - *Configurable via serial*
+- **Storage**: Saved to flash using Preferences API (namespace: "thresholds")
+- **Persistence**: Survives reboots, loaded automatically on startup
 
 ## Error Handling
 
@@ -222,6 +254,7 @@ ShroomBox.ino
 - Device enters ERROR state on failure
 - Auto-restart after timeout
 - Button can trigger reset during error
+- Threshold validation prevents invalid values
 
 ## Threading Model
 
@@ -252,20 +285,54 @@ ShroomBox.ino
 - Case-insensitive matching for commands
 - Parameters separated by space
 
+### Command Categories
+1. **Information**: HELP, GET_THRESHOLDS
+2. **Control**: f0, f1, h0, h1, a0, a1
+3. **Calibration**: CALIBRATE [ppm]
+4. **Configuration**: SET_CO2_MAX, SET_CO2_VAR, SET_HUM_MIN, SET_HUM_VAR, RESET_THRESHOLDS
+
 ### Command Parsing Pattern
 ```cpp
 if (Serial.available()) {
   String cmd = Serial.readStringUntil('\n');
   cmd.trim();
   
-  if (cmd.startsWith("CALIBRATE") || cmd.startsWith("calibrate")) {
-    uint16_t refPpm = 400;  // default
+  // Help command (early return)
+  if (cmd.equalsIgnoreCase("help") || cmd.equalsIgnoreCase("?")) {
+    // Display help menu
+    return;
+  }
+  
+  // Commands with parameters
+  if (cmd.startsWith("SET_CO2_MAX")) {
     int spaceIndex = cmd.indexOf(' ');
     if (spaceIndex > 0) {
-      refPpm = cmd.substring(spaceIndex + 1).toInt();
+      float newValue = cmd.substring(spaceIndex + 1).toFloat();
+      if (newValue >= 400 && newValue <= 5000) {
+        co2Max = newValue;
+        saveThresholds();  // Persist to flash
+      }
     }
-    calibrateCO2(refPpm);
   }
   // ... other commands
+}
+```
+
+### Threshold Persistence Pattern
+```cpp
+// Load on boot
+void loadThresholds() {
+  thresholdPrefs.begin(THRESHOLD_NAMESPACE, true);  // Read-only
+  co2Max = thresholdPrefs.getFloat("co2Max", 950.0);  // Default if not found
+  // ... load other thresholds
+  thresholdPrefs.end();
+}
+
+// Save on change
+void saveThresholds() {
+  thresholdPrefs.begin(THRESHOLD_NAMESPACE, false);  // Read-write
+  thresholdPrefs.putFloat("co2Max", co2Max);
+  // ... save other thresholds
+  thresholdPrefs.end();
 }
 ```

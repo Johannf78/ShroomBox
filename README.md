@@ -14,10 +14,17 @@ An ESP32-based IoT device for environmental monitoring and automated control of 
 - **Data Transmission**: All sensor data sent to Blynk cloud every 60 seconds
 
 ### Automated Control
-- **Fan Control**: Automatic fan activation when CO2 exceeds 1250 ppm, deactivation below 1100 ppm
+- **Fan Control**: Automatic fan activation when CO2 exceeds 900 ppm, deactivation below 750 ppm
 - **Humidifier Control**: Automatic humidification when humidity drops below 70%, stops above 85%
 - **Smart Logic**: Humidifier only operates when fan is off to prevent conflicts
 - **Manual Override**: Full manual control available via Blynk app
+
+### Serial Command Interface
+- **CO2 Calibration**: Calibrate sensor via serial with custom PPM value (`CALIBRATE 420`)
+- **Manual Control**: Direct fan/humidifier/auto mode control via serial commands
+- **Threshold Configuration**: Configure all control thresholds via serial with persistence
+- **Help System**: Built-in help command to display all available commands
+- **Local Access**: Control device without network access via USB connection
 
 ### IoT Capabilities
 - **Blynk.Edgent Integration**: Easy WiFi provisioning and OTA updates
@@ -110,8 +117,19 @@ An ESP32-based IoT device for environmental monitoring and automated control of 
 ### Configuration Reset
 
 - **Hold reset button (GPIO 0) for 10 seconds**
-- Device will reset all configuration
+- Device will reset all configuration (WiFi, Blynk credentials)
+- **Note**: Threshold settings are NOT reset by button (use `RESET_THRESHOLDS` serial command)
 - Returns to configuration mode
+
+### Threshold Configuration
+
+All control thresholds can be configured via serial commands and are automatically saved to flash memory:
+
+- **CO2 Thresholds**: Set via `SET_CO2_MAX` and `SET_CO2_VAR` commands
+- **Humidity Thresholds**: Set via `SET_HUM_MIN` and `SET_HUM_VAR` commands
+- **View Current**: Use `GET_THRESHOLDS` command
+- **Reset to Defaults**: Use `RESET_THRESHOLDS` command
+- **Persistence**: All changes are automatically saved and persist across reboots
 
 ## 📱 Blynk Dashboard Setup
 
@@ -150,14 +168,66 @@ An ESP32-based IoT device for environmental monitoring and automated control of 
 3. Monitor environmental data (V1, V2, V3)
 
 ### Automatic Mode
-1. Set Auto Mode (V5) to **ON** in Blynk app
+1. Set Auto Mode (V5) to **ON** in Blynk app (or use serial command `a1`)
 2. Device automatically controls fan and humidifier:
-   - **Fan ON**: When CO2 > 1250 ppm
-   - **Fan OFF**: When CO2 < 1100 ppm
-   - **Humidifier ON**: When humidity < 70% (only when fan is off)
-   - **Humidifier OFF**: When humidity > 85%
+   - **Fan ON**: When CO2 > threshold (default: 950 ppm, configurable)
+   - **Fan OFF**: When CO2 < (threshold - variation) (default: 850 ppm, configurable)
+   - **Humidifier ON**: When humidity < threshold (default: 70%, configurable, only when fan is off)
+   - **Humidifier OFF**: When humidity > (threshold + variation) (default: 85%, configurable)
 3. Monitor real-time sensor data
 4. Manual override still available (temporarily overrides auto mode)
+5. Use `GET_THRESHOLDS` serial command to view current threshold values
+
+### Serial Commands
+Connect via Serial Monitor at **115200 baud** to use these commands:
+
+#### Control Commands
+| Command | Description |
+|---------|-------------|
+| `f1` | Turn fan ON |
+| `f0` | Turn fan OFF |
+| `h1` | Turn humidifier ON |
+| `h0` | Turn humidifier OFF |
+| `a1` | Enable auto mode |
+| `a0` | Disable auto mode |
+
+#### CO2 Sensor Commands
+| Command | Description |
+|---------|-------------|
+| `CALIBRATE` | Calibrate CO2 sensor to 400 ppm (default) |
+| `CALIBRATE 420` | Calibrate CO2 sensor to specified PPM value |
+
+**CO2 Calibration Tips:**
+- Expose sensor to fresh outdoor air (~400-420 ppm) for at least 2 minutes
+- Send calibration command: `CALIBRATE 420`
+- Wait for confirmation message in Serial Monitor
+
+#### Threshold Configuration Commands
+| Command | Description | Range |
+|---------|-------------|-------|
+| `SET_CO2_MAX <value>` | Set CO2 max threshold (fan ON) | 400-5000 ppm |
+| `SET_CO2_VAR <value>` | Set CO2 variation/hysteresis | 50-500 ppm |
+| `SET_HUM_MIN <value>` | Set humidity min threshold | 0-100 % |
+| `SET_HUM_VAR <value>` | Set humidity variation | 5-50 % |
+| `GET_THRESHOLDS` | Display current threshold values | - |
+| `RESET_THRESHOLDS` | Reset all thresholds to defaults | - |
+
+**Threshold Configuration Examples:**
+```
+SET_CO2_MAX 1000      # Fan turns ON when CO2 > 1000 ppm
+SET_CO2_VAR 150       # Fan turns OFF when CO2 < 850 ppm (1000-150)
+SET_HUM_MIN 75        # Humidifier turns ON when humidity < 75%
+SET_HUM_VAR 20        # Humidifier turns OFF when humidity > 95% (75+20)
+```
+
+**Note**: All threshold changes are automatically saved to flash memory and persist across reboots.
+
+#### Information Commands
+| Command | Description |
+|---------|-------------|
+| `HELP` or `?` | Display all available commands with descriptions |
+
+Type `HELP` or `?` in Serial Monitor to see a complete list of all commands with examples.
 
 ### LED Status Indication
 - **Breathing Animation**: Device running normally
@@ -172,13 +242,16 @@ An ESP32-based IoT device for environmental monitoring and automated control of 
   - Range: 400-10000 ppm
   - Accuracy: ±(30 ppm + 3% of reading)
   - Automatic Self-Calibration: **Disabled** (for mushroom chamber use)
-  - Reading Interval: 60 seconds
+  - Manual Calibration: Via serial command `CALIBRATE [ppm]`
+  - Sensor Read Interval: 5 seconds
+  - Blynk Update Interval: 60 seconds
 
 ### Automatic Control Thresholds
-- **CO2 Maximum**: 1250 ppm (fan activates)
-- **CO2 Variation**: 150 ppm (hysteresis for fan deactivation)
-- **Humidity Minimum**: 70% (humidifier activates)
-- **Humidity Variation**: 15% (hysteresis for humidifier deactivation)
+- **CO2 Maximum**: 950 ppm (fan activates) - *Configurable via serial*
+- **CO2 Variation**: 100 ppm (hysteresis - fan deactivates at 850 ppm) - *Configurable via serial*
+- **Humidity Minimum**: 70% (humidifier activates) - *Configurable via serial*
+- **Humidity Variation**: 15% (hysteresis - humidifier deactivates at 85%) - *Configurable via serial*
+- **Persistence**: All thresholds are saved to flash memory and survive reboots
 
 ### Firmware Details
 - **Framework**: Blynk.Edgent
@@ -186,7 +259,11 @@ An ESP32-based IoT device for environmental monitoring and automated control of 
 - **Template ID**: TMPL4JzPZ45yp
 - **Template Name**: ShroomBox
 - **Main Loop Delay**: 10ms (non-blocking)
-- **Sensor Read Interval**: 60 seconds
+- **Sensor Read Interval**: 5 seconds
+- **Blynk Update Interval**: 60 seconds
+- **Serial Baud Rate**: 115200
+- **Configuration Storage**: ESP32 Preferences API (flash memory)
+- **Threshold Persistence**: Automatic save to flash on change
 
 ### OTA Updates
 - Over-the-air firmware updates supported via Blynk.Air
@@ -241,14 +318,26 @@ ShroomBox/
 └── README.md
 ```
 
+## ✅ Recent Updates
+
+- [x] Serial command interface for local control
+- [x] CO2 calibration via serial with custom PPM value (`CALIBRATE [ppm]`)
+- [x] Manual fan/humidifier/auto mode control via serial (`f0`, `f1`, `h0`, `h1`, `a0`, `a1`)
+- [x] **Threshold configuration via serial** - Set all control thresholds remotely
+- [x] **Threshold persistence** - All thresholds saved to flash memory, survive reboots
+- [x] **Built-in help system** - Type `HELP` or `?` to see all available commands
+- [x] Updated CO2 thresholds (950 ppm max, 100 ppm variation)
+- [x] Separate sensor read (5s) and Blynk update (60s) intervals
+
 ## 🔮 Future Enhancements
 
 - [ ] Heater control implementation (GPIO 12)
-- [ ] User-configurable thresholds via Blynk
+- [ ] User-configurable thresholds via Blynk (currently available via serial)
 - [ ] Historical data logging
 - [ ] Blynk notifications/alerts
 - [ ] Multi-chamber support
 - [ ] Enhanced web portal UI
+- [ ] Threshold configuration via Blynk virtual pins
 
 ## 📄 License
 
